@@ -3820,7 +3820,7 @@
       </div>
       <div class="masthead-brief">
         <div class="brief-readout"><span class="brief-dot"></span><strong>LIVE</strong><span>行动频道在线</span></div>
-        <button class="audio-toggle" id="audioToggle" type="button" aria-pressed="false">音效：开</button>
+        <button class="audio-toggle" id="audioToggle" type="button" aria-pressed="false">声音：开</button>
         <p class="masthead-note">零号大坝行动频道<br>带出的是物资，留下的是成长。</p>
       </div>
     </header>
@@ -4042,6 +4042,8 @@
       move: "ui-select.wav",
       search: "ui-scratch.wav",
       dice: "ui-pluck.wav",
+      diceShake: "ui-scratch.wav",
+      diceLand: "ui-tick.wav",
       attack: "ui-glitch.wav",
       hit: "ui-drop.wav",
       success: "ui-confirm.wav",
@@ -4053,10 +4055,49 @@
       muted: localStorage.getItem(AUDIO_MUTED_KEY) === "1",
       unlocked: false
     };
+    const musicState = {
+      context: null,
+      gain: null,
+      activeMode: null,
+      timer: null,
+      step: 0
+    };
+    const musicTracks = {
+      prep: {
+        bpm: 72,
+        melody: [146.83, 174.61, 220, 261.63, 220, 174.61, 164.81, 196],
+        bass: [73.42, 87.31, 110, 98],
+        type: "sine",
+        volume: 0.042
+      },
+      raid: {
+        bpm: 128,
+        melody: [110, 130.81, 146.83, 164.81, 146.83, 130.81, 98, 110],
+        bass: [55, 55, 65.41, 73.42],
+        type: "sawtooth",
+        volume: 0.032
+      }
+    };
     let liveWatchTimer = null;
+
+    function ensureMusicContext() {
+      if (musicState.context) {
+        if (musicState.context.state === "suspended") musicState.context.resume().catch(() => {});
+        return musicState.context;
+      }
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return null;
+      try {
+        musicState.context = new AudioContextClass();
+        return musicState.context;
+      } catch {
+        return null;
+      }
+    }
 
     function unlockAudio() {
       audioState.unlocked = true;
+      if (!audioState.muted) syncMusicForScreen();
     }
 
     function playSound(id, volume = 0.32) {
@@ -4066,17 +4107,105 @@
       audio.play().catch(() => {});
     }
 
+    function synthTone(frequency, duration, volume, type = "sine", when = 0) {
+      const context = ensureMusicContext();
+      if (!context || !musicState.gain) return;
+      const oscillator = context.createOscillator();
+      const envelope = context.createGain();
+      const start = context.currentTime + when;
+      const end = start + duration;
+      oscillator.type = type;
+      oscillator.frequency.setValueAtTime(frequency, start);
+      envelope.gain.setValueAtTime(0.0001, start);
+      envelope.gain.exponentialRampToValueAtTime(Math.max(0.0001, volume), start + 0.035);
+      envelope.gain.exponentialRampToValueAtTime(0.0001, end);
+      oscillator.connect(envelope);
+      envelope.connect(musicState.gain);
+      oscillator.start(start);
+      oscillator.stop(end + 0.05);
+    }
+
+    function scheduleMusicStep(mode) {
+      const context = musicState.context;
+      const track = musicTracks[mode];
+      if (!context || !track || !musicState.gain || musicState.activeMode !== mode) return;
+      const step = musicState.step++;
+      const beat = 60 / track.bpm;
+      const melody = track.melody[step % track.melody.length];
+      const bass = track.bass[step % track.bass.length];
+      synthTone(melody, mode === "raid" ? beat * 0.58 : beat * 0.86, track.volume, track.type);
+      synthTone(bass, beat * 0.92, track.volume * 1.35, mode === "raid" ? "square" : "triangle");
+      if (mode === "raid" && step % 2 === 0) {
+        synthTone(melody * 2, beat * 0.18, track.volume * 0.52, "square", beat * 0.18);
+      }
+    }
+
+    function stopMusic() {
+      if (musicState.timer) {
+        window.clearInterval(musicState.timer);
+        musicState.timer = null;
+      }
+      if (musicState.gain && musicState.context) {
+        const oldGain = musicState.gain;
+        const now = musicState.context.currentTime;
+        oldGain.gain.cancelScheduledValues(now);
+        oldGain.gain.setTargetAtTime(0.0001, now, 0.08);
+        window.setTimeout(() => {
+          try {
+            oldGain.disconnect();
+          } catch {}
+        }, 350);
+      }
+      musicState.gain = null;
+      musicState.activeMode = null;
+      musicState.step = 0;
+    }
+
+    function startMusic(mode) {
+      if (audioState.muted || !audioState.unlocked || !musicTracks[mode]) return;
+      const context = ensureMusicContext();
+      if (!context) return;
+      if (musicState.activeMode === mode && musicState.timer) return;
+      stopMusic();
+      const track = musicTracks[mode];
+      musicState.activeMode = mode;
+      musicState.gain = context.createGain();
+      musicState.gain.gain.setValueAtTime(0.0001, context.currentTime);
+      musicState.gain.gain.exponentialRampToValueAtTime(0.72, context.currentTime + 0.55);
+      musicState.gain.connect(context.destination);
+      scheduleMusicStep(mode);
+      musicState.timer = window.setInterval(() => scheduleMusicStep(mode), 60000 / track.bpm);
+    }
+
+    function syncMusicForScreen() {
+      if (audioState.muted || !audioState.unlocked) return;
+      startMusic(flowScreen() === "raid" ? "raid" : "prep");
+    }
+
+    function playDiceRollSequence() {
+      playSound("dice", 0.18);
+      [85, 170, 255].forEach((delay, index) => {
+        window.setTimeout(() => playSound("diceShake", 0.12 + index * 0.02), delay);
+      });
+    }
+
     function toggleAudio() {
       audioState.muted = !audioState.muted;
       localStorage.setItem(AUDIO_MUTED_KEY, audioState.muted ? "1" : "0");
       renderAudioToggle();
-      if (!audioState.muted) playSound("success", 0.28);
+      if (audioState.muted) {
+        stopMusic();
+      } else {
+        audioState.unlocked = true;
+        syncMusicForScreen();
+        playSound("success", 0.28);
+      }
     }
 
     function renderAudioToggle() {
       const button = $("#audioToggle");
       if (!button) return;
-      button.textContent = `音效：${audioState.muted ? "关" : "开"}`;
+      button.textContent = `声音：${audioState.muted ? "关" : "开"}`;
       button.setAttribute("aria-pressed", String(!audioState.muted));
     }
 
@@ -4778,12 +4907,14 @@
       const diceVideo = $("#diceRollVideo");
       const diceFinal = $("#diceFinalResult");
       if (diceVideo && diceFinal) {
-        playSound("dice", 0.24);
+        playDiceRollSequence();
         const revealDice = () => {
           diceVideo.pause();
           diceVideo.classList.add("hidden");
           diceFinal.classList.add("revealed");
-          playSound("health", 0.2);
+          playSound("diceLand", 0.36);
+          if (state.event.check.result === "criticalSuccess") playSound("success", 0.24);
+          if (state.event.check.result === "criticalFailure") playSound("failure", 0.24);
           diceVideo.parentElement?.classList.add("complete");
           const eventTitle = $("#eventTitle");
           const eventStory = $("#eventStory");
@@ -6334,12 +6465,20 @@
       renderRaid();
       renderSettlement();
       setScreen();
+      syncMusicForScreen();
       renderEvent();
       saveGame();
     }
 
     document.addEventListener("pointerdown", unlockAudio, { once: true, passive: true });
     document.addEventListener("keydown", unlockAudio, { once: true });
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) {
+        stopMusic();
+      } else if (!audioState.muted && audioState.unlocked) {
+        syncMusicForScreen();
+      }
+    });
     document.addEventListener("click", (event) => {
       const target = event.target instanceof Element ? event.target.closest("button") : null;
       if (!target || target.disabled) return;
