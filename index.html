@@ -2545,6 +2545,24 @@
       letter-spacing: 0;
     }
 
+    .audio-toggle {
+      justify-self: end;
+      padding: 6px 9px;
+      border: 1px solid rgba(105, 216, 197, .26);
+      border-radius: 3px;
+      background: rgba(12, 28, 21, .82);
+      color: #b6d7c0;
+      font-family: var(--terminal-mono);
+      font-size: 10px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .audio-toggle:hover {
+      border-color: rgba(243, 174, 85, .72);
+      color: var(--terminal-amber-soft);
+    }
+
     .brief-dot {
       width: 8px;
       height: 8px;
@@ -3592,6 +3610,130 @@
       box-shadow: 0 0 30px rgba(114, 208, 139, .28);
     }
 
+    .live-task-panel {
+      overflow: hidden;
+      border-top: 2px solid var(--game-teal);
+    }
+
+    .live-task-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .live-task-card {
+      display: flex;
+      min-height: 232px;
+      flex-direction: column;
+      gap: 10px;
+      padding: 15px;
+      border: 1px solid var(--game-line);
+      border-radius: var(--game-radius);
+      background:
+        linear-gradient(145deg, rgba(27, 48, 35, .94), rgba(10, 19, 15, .92)),
+        repeating-linear-gradient(0deg, transparent 0 5px, rgba(255, 255, 255, .018) 6px);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .035);
+    }
+
+    .live-task-card.done {
+      border-color: rgba(114, 208, 139, .48);
+      background: linear-gradient(145deg, rgba(31, 67, 45, .94), rgba(10, 25, 17, .94));
+    }
+
+    .live-task-top,
+    .live-task-reward,
+    .live-task-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .live-task-top {
+      align-items: flex-start;
+    }
+
+    .live-task-icon {
+      display: grid;
+      width: 34px;
+      height: 34px;
+      flex: 0 0 34px;
+      place-items: center;
+      border: 1px solid rgba(244, 179, 93, .35);
+      border-radius: 4px;
+      color: var(--game-gold-hot);
+      background: rgba(244, 179, 93, .12);
+      font-family: var(--game-mono);
+      font-size: 17px;
+    }
+
+    .live-task-title {
+      color: var(--game-text);
+      font-family: var(--game-display);
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .live-task-desc {
+      min-height: 42px;
+      color: var(--game-muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .live-task-progress {
+      height: 7px;
+      overflow: hidden;
+      border: 1px solid rgba(105, 216, 197, .2);
+      border-radius: 2px;
+      background: rgba(4, 13, 9, .82);
+    }
+
+    .live-task-progress span {
+      display: block;
+      width: 0;
+      height: 100%;
+      background: linear-gradient(90deg, var(--game-teal), var(--game-gold-hot));
+      box-shadow: 0 0 12px rgba(105, 216, 197, .36);
+      transition: width .25s ease;
+    }
+
+    .live-task-progress-label {
+      color: var(--game-muted);
+      font-family: var(--game-mono);
+      font-size: 10px;
+    }
+
+    .live-task-reward {
+      justify-content: flex-start;
+      color: var(--game-gold-hot);
+      font-family: var(--game-mono);
+      font-size: 11px;
+    }
+
+    .live-task-actions {
+      margin-top: auto;
+      align-items: stretch;
+    }
+
+    .live-task-actions .button,
+    .live-task-actions a {
+      flex: 1;
+      min-width: 0;
+      padding: 9px 8px;
+      text-align: center;
+      font-size: 10px;
+      text-decoration: none;
+    }
+
+    .live-task-note {
+      margin-top: 12px;
+      color: var(--game-muted);
+      font-family: var(--game-mono);
+      font-size: 10px;
+      line-height: 1.55;
+    }
+
     @media (max-width: 760px) {
       .shell {
         width: calc(100% - 16px);
@@ -3650,6 +3792,14 @@
       .map-node {
         min-height: 46px;
       }
+
+      .live-task-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .live-task-card {
+        min-height: 0;
+      }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -3670,6 +3820,7 @@
       </div>
       <div class="masthead-brief">
         <div class="brief-readout"><span class="brief-dot"></span><strong>LIVE</strong><span>行动频道在线</span></div>
+        <button class="audio-toggle" id="audioToggle" type="button" aria-pressed="false">音效：开</button>
         <p class="masthead-note">零号大坝行动频道<br>带出的是物资，留下的是成长。</p>
       </div>
     </header>
@@ -3797,6 +3948,45 @@
     };
 
     const MAX_LEVEL = 10;
+    const LIVE_TASKS = [
+      {
+        id: "watch-live",
+        icon: "◷",
+        code: "WATCH / 01",
+        title: "驻足虎牙直播间",
+        desc: "打开虎牙直播间并累计停留 1 分钟，完成后可领取双重奖励。",
+        target: 60,
+        unit: "秒",
+        rewardCredits: 800,
+        rewardXp: 30,
+        actionLabel: "开始计时"
+      },
+      {
+        id: "follow-anchor",
+        icon: "★",
+        code: "FOLLOW / 02",
+        title: "关注虎牙主播",
+        desc: "关注当前行动频道的虎牙主播，建立你的固定情报来源。",
+        target: 1,
+        unit: "次",
+        rewardCredits: 1200,
+        rewardXp: 50,
+        actionLabel: "确认已关注"
+      },
+      {
+        id: "send-barrage",
+        icon: "»",
+        code: "CHAT / 03",
+        title: "发送一条弹幕",
+        desc: "在虎牙直播间发出一条弹幕，让主播看到你的搜打撤路线。",
+        target: 1,
+        unit: "条",
+        rewardCredits: 1000,
+        rewardXp: 45,
+        actionLabel: "确认已发送"
+      }
+    ];
+    const HUYA_LIVE_URL = "https://www.huya.com/459804";
     const EXTRACTION_TEMPLATES = [
       { id: "safe", name: "稳定撤离点", shortName: "无条件撤离", rule: "无需额外条件即可尝试撤离。", success: 82, tone: "safe", mark: "撤离 · 无条件" },
       { id: "boss", name: "首领专属撤离点", shortName: "击败 Boss 后开放", rule: "击败赛义德后才能启动撤离。", success: 68, tone: "boss", mark: "撤离 · Boss锁定" },
@@ -3827,6 +4017,7 @@
         stats: { maxHp: 30, attack: 15, armor: 15 }
       },
       selection: { teammate: "redwolf", weapon: "carbine", armor: "light" },
+      liveTasks: { date: "", tasks: {} },
       stash: [
         { name: "止血带", type: "medical", count: 3, value: 80 },
         { name: "战地医疗包", type: "medical", count: 2, value: 220 },
@@ -3840,11 +4031,55 @@
 
     const STORAGE_KEY = "triangle-extraction-save-v2";
     const SUPPLY_COST = 420;
+    const AUDIO_MUTED_KEY = "triangle-extraction-audio-muted";
 
     const $ = (selector) => document.querySelector(selector);
     const money = (value) => `${Math.max(0, Math.round(value)).toLocaleString()} C`;
     const pick = (list) => list[Math.floor(Math.random() * list.length)];
     const chance = (percent) => Math.random() * 100 < percent;
+    const audioFiles = {
+      click: "ui-click.wav",
+      move: "ui-select.wav",
+      search: "ui-scratch.wav",
+      dice: "ui-pluck.wav",
+      attack: "ui-glitch.wav",
+      hit: "ui-drop.wav",
+      success: "ui-confirm.wav",
+      failure: "ui-error.wav",
+      health: "ui-tick.wav",
+      open: "ui-open.wav"
+    };
+    const audioState = {
+      muted: localStorage.getItem(AUDIO_MUTED_KEY) === "1",
+      unlocked: false
+    };
+    let liveWatchTimer = null;
+
+    function unlockAudio() {
+      audioState.unlocked = true;
+    }
+
+    function playSound(id, volume = 0.32) {
+      if (!audioState.unlocked || audioState.muted || !audioFiles[id]) return;
+      const audio = new Audio(`assets/audio/${audioFiles[id]}`);
+      audio.volume = volume;
+      audio.play().catch(() => {});
+    }
+
+    function toggleAudio() {
+      audioState.muted = !audioState.muted;
+      localStorage.setItem(AUDIO_MUTED_KEY, audioState.muted ? "1" : "0");
+      renderAudioToggle();
+      if (!audioState.muted) playSound("success", 0.28);
+    }
+
+    function renderAudioToggle() {
+      const button = $("#audioToggle");
+      if (!button) return;
+      button.textContent = `音效：${audioState.muted ? "关" : "开"}`;
+      button.setAttribute("aria-pressed", String(!audioState.muted));
+    }
+
     const rarityLabels = { red: "红色", gold: "金色", purple: "紫色", blue: "蓝色", green: "绿色", white: "白色" };
     const resultLabels = {
       criticalSuccess: "大成功",
@@ -4133,6 +4368,185 @@
       }
     }
 
+    function liveTaskDateKey(date = new Date()) {
+      return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, "0"), String(date.getDate()).padStart(2, "0")].join("-");
+    }
+
+    function normalizeLiveTasks() {
+      const today = liveTaskDateKey();
+      const savedTasks = state.liveTasks?.date === today ? (state.liveTasks.tasks || {}) : {};
+      state.liveTasks = { date: today, tasks: {} };
+      LIVE_TASKS.forEach((task) => {
+        const saved = savedTasks[task.id] || {};
+        const savedUntil = Number(saved.activeUntil) || 0;
+        const timedProgress = savedUntil
+          ? task.target - Math.ceil(Math.max(0, savedUntil - Date.now()) / 1000)
+          : 0;
+        state.liveTasks.tasks[task.id] = {
+          progress: clamp(Math.max(Number(saved.progress) || 0, timedProgress), 0, task.target),
+          claimed: Boolean(saved.claimed),
+          activeUntil: savedUntil > Date.now() ? savedUntil : null
+        };
+      });
+    }
+
+    function getLiveTask(id) {
+      return LIVE_TASKS.find((task) => task.id === id);
+    }
+
+    function getLiveTaskState(id) {
+      if (!state.liveTasks || state.liveTasks.date !== liveTaskDateKey() || !state.liveTasks.tasks?.[id]) {
+        normalizeLiveTasks();
+      }
+      return state.liveTasks.tasks[id];
+    }
+
+    function liveTaskPercent(task, entry) {
+      return Math.round(clamp(entry.progress / task.target * 100, 0, 100));
+    }
+
+    function liveTaskProgressText(task, entry) {
+      if (task.target === 1) return entry.progress >= task.target ? "已完成" : "待确认";
+      return `${entry.progress}/${task.target}${task.unit}`;
+    }
+
+    function updateLiveTaskVisual(task, entry) {
+      const progress = document.querySelector(`[data-live-progress="${task.id}"]`);
+      const label = document.querySelector(`[data-live-progress-label="${task.id}"]`);
+      const action = document.querySelector(`[data-live-task-action="${task.id}"]`);
+      if (progress) progress.style.width = `${liveTaskPercent(task, entry)}%`;
+      if (label) label.textContent = liveTaskProgressText(task, entry);
+      if (action && task.id === "watch-live") {
+        action.textContent = entry.activeUntil ? `观看中 ${entry.progress}s` : entry.progress >= task.target ? "已完成" : task.actionLabel;
+        action.disabled = Boolean(entry.activeUntil) || entry.progress >= task.target || entry.claimed;
+      }
+    }
+
+    function stopLiveWatchTicker() {
+      if (liveWatchTimer) {
+        window.clearInterval(liveWatchTimer);
+        liveWatchTimer = null;
+      }
+    }
+
+    function syncLiveWatchTask() {
+      const task = getLiveTask("watch-live");
+      const entry = getLiveTaskState("watch-live");
+      if (!entry.activeUntil) {
+        stopLiveWatchTicker();
+        return;
+      }
+      const secondsLeft = Math.max(0, Math.ceil((entry.activeUntil - Date.now()) / 1000));
+      entry.progress = Math.max(entry.progress, task.target - secondsLeft);
+      updateLiveTaskVisual(task, entry);
+      saveGame();
+      if (secondsLeft <= 0) {
+        entry.progress = task.target;
+        entry.activeUntil = null;
+        stopLiveWatchTicker();
+        updateLiveTaskVisual(task, entry);
+        playSound("success", 0.4);
+        openEvent("观看任务完成", "你已在虎牙直播间累计停留 1 分钟。\n现在可以回到任务面板领取哈夫币与经验奖励。", "success");
+      }
+    }
+
+    function startLiveWatchTicker() {
+      stopLiveWatchTicker();
+      liveWatchTimer = window.setInterval(syncLiveWatchTask, 250);
+    }
+
+    function handleLiveTask(id) {
+      const task = getLiveTask(id);
+      const entry = getLiveTaskState(id);
+      if (!task || entry.claimed || entry.progress >= task.target) return;
+      if (id === "watch-live") {
+        if (entry.activeUntil) return;
+        entry.activeUntil = Date.now() + (task.target - entry.progress) * 1000;
+        startLiveWatchTicker();
+        playSound("open", 0.28);
+        render();
+        openEvent("观看计时已开始", "计时会在页面保持打开时继续进行。\n你可以先前往虎牙直播间，完成 1 分钟后返回领取奖励。", "info");
+        return;
+      }
+      entry.progress = task.target;
+      playSound("success", 0.26);
+      render();
+      openEvent("任务已登记", `${task.title}已记录完成。\n单机原型暂未读取虎牙账号状态，请确认实际完成后再领取奖励。`, "success");
+    }
+
+    function claimLiveTask(id) {
+      const task = getLiveTask(id);
+      const entry = getLiveTaskState(id);
+      if (!task || entry.claimed) return;
+      if (entry.progress < task.target) {
+        openEvent("奖励暂未解锁", `完成“${task.title}”后才能领取本项奖励。`, "warning");
+        return;
+      }
+      entry.claimed = true;
+      entry.activeUntil = null;
+      stopLiveWatchTicker();
+      state.meta.credits += task.rewardCredits;
+      awardXp(task.rewardXp, `直播任务：${task.title}`);
+      playSound("success", 0.42);
+      openEvent(
+        "直播奖励到账",
+        `已领取 ${task.title}。\n获得 ${money(task.rewardCredits)} 和经验 ${task.rewardXp}。`,
+        "success"
+      );
+    }
+
+    function renderLiveTasksMarkup() {
+      normalizeLiveTasks();
+      return `
+        <section class="panel live-task-panel" style="margin-top: 18px">
+          <div class="panel-head">
+            <div>
+              <h2>直播间任务</h2>
+              <div class="item-meta">完成直播互动，把观众身份转化成下一局的哈夫币与经验。</div>
+            </div>
+            <span class="tag gold">每日激励</span>
+          </div>
+          <div class="panel-body">
+            <div class="live-task-grid">
+              ${LIVE_TASKS.map((task) => {
+                const entry = state.liveTasks.tasks[task.id];
+                const ready = entry.progress >= task.target;
+                const actionDisabled = entry.claimed || ready || Boolean(entry.activeUntil);
+                const actionText = entry.activeUntil
+                  ? `观看中 ${entry.progress}s`
+                  : ready
+                    ? "已完成"
+                    : task.actionLabel;
+                return `
+                  <article class="live-task-card ${entry.claimed ? "done" : ready ? "ready" : ""}">
+                    <div class="live-task-top">
+                      <div>
+                        <div class="section-kicker">${task.code}</div>
+                        <div class="live-task-title">${task.title}</div>
+                      </div>
+                      <span class="live-task-icon" aria-hidden="true">${task.icon}</span>
+                    </div>
+                    <div class="live-task-desc">${task.desc}</div>
+                    <div class="live-task-progress" role="progressbar" aria-valuenow="${liveTaskPercent(task, entry)}" aria-valuemin="0" aria-valuemax="100">
+                      <span data-live-progress="${task.id}" style="width:${liveTaskPercent(task, entry)}%"></span>
+                    </div>
+                    <div class="live-task-progress-label" data-live-progress-label="${task.id}">${liveTaskProgressText(task, entry)}</div>
+                    <div class="live-task-reward">奖励：${money(task.rewardCredits)} · 经验 +${task.rewardXp}</div>
+                    <div class="live-task-actions">
+                      <a class="button secondary" href="${HUYA_LIVE_URL}" target="_blank" rel="noopener">前往直播间 ↗</a>
+                      <button class="button ${ready ? "orange" : "secondary"}" data-live-task-action="${task.id}" ${actionDisabled ? "disabled" : ""}>${actionText}</button>
+                      <button class="button ${ready && !entry.claimed ? "orange" : "secondary"}" data-live-task-claim="${task.id}" ${!ready || entry.claimed ? "disabled" : ""}>${entry.claimed ? "已领取" : "领取奖励"}</button>
+                    </div>
+                  </article>
+                `;
+              }).join("")}
+            </div>
+            <div class="live-task-note">单机原型说明：观看任务使用真实 60 秒计时；关注与弹幕暂使用本地确认按钮，正式接入虎牙账号后可替换为真实校验。</div>
+          </div>
+        </section>
+      `;
+    }
+
     function stashCount() {
       return state.stash.reduce((total, item) => total + (item.count || 0), 0);
     }
@@ -4230,6 +4644,7 @@
       if (state.meta.credits < SUPPLY_COST) return;
       state.meta.credits -= SUPPLY_COST;
       addToStash({ id: "medical-crate", name: "战地医疗包", type: "medical", count: 3, value: 220, rarity: "green", rarityName: "补给" });
+      playSound("success");
       render();
     }
 
@@ -4246,6 +4661,7 @@
         rarity: item.rarity,
         rarityName: item.rarityName
       });
+      playSound("success");
       openEvent("采购完成", `${item.name} ×${item.bundle} 已加入仓库。\n消耗 ${money(item.price)}，剩余哈夫币 ${money(state.meta.credits)}。`, "success");
     }
 
@@ -4362,10 +4778,12 @@
       const diceVideo = $("#diceRollVideo");
       const diceFinal = $("#diceFinalResult");
       if (diceVideo && diceFinal) {
+        playSound("dice", 0.24);
         const revealDice = () => {
           diceVideo.pause();
           diceVideo.classList.add("hidden");
           diceFinal.classList.add("revealed");
+          playSound("health", 0.2);
           diceVideo.parentElement?.classList.add("complete");
           const eventTitle = $("#eventTitle");
           const eventStory = $("#eventStory");
@@ -4608,6 +5026,7 @@
             </div>
           </aside>
         </div>
+        ${renderLiveTasksMarkup()}
         <section class="panel" style="margin-top: 18px">
           <div class="panel-head">
             <div>
@@ -4643,6 +5062,8 @@
       }));
       document.querySelectorAll("[data-upgrade]").forEach((button) => button.addEventListener("click", () => upgradeStat(button.dataset.upgrade)));
       document.querySelectorAll("[data-buy-shop]").forEach((button) => button.addEventListener("click", () => buyShopItem(button.dataset.buyShop)));
+      document.querySelectorAll("[data-live-task-action]").forEach((button) => button.addEventListener("click", () => handleLiveTask(button.dataset.liveTaskAction)));
+      document.querySelectorAll("[data-live-task-claim]").forEach((button) => button.addEventListener("click", () => claimLiveTask(button.dataset.liveTaskClaim)));
       $("#startRaid").addEventListener("click", startRaid);
     }
 
@@ -4650,6 +5071,7 @@
       const teammate = selected("teammates");
       const entryCost = loadoutCost();
       if (!canStartRaid()) return;
+      playSound("open", 0.36);
       consumeStash("medical", requiredMedical());
       const stats = state.meta.stats;
       state.raid = {
@@ -4975,6 +5397,7 @@
       const currentLocation = data.locations.find((item) => item.id === raid?.currentLocation);
       if (!raid || raid.defeated || !location || raid.enemy || raid.currentLocation === id) return;
       if (currentLocation && !currentLocation.neighbors.includes(id)) {
+        playSound("failure");
         openEvent("路线不可达", `从${currentLocation.name}不能直接前往${location.name}。\n请先沿地图上的相邻路线移动。`, "warning");
         return;
       }
@@ -4982,6 +5405,7 @@
       const check = rollCheck(target);
       raid.rollHistory.unshift({ type: "move", location: location.name, ...check });
       if (check.result === "criticalFailure") {
+        playSound("failure");
         const xp = grantCheckXp(check, { criticalFailure: 3, failure: 0, success: 0, criticalSuccess: 0 }, "行进大失败");
         addLog(`行进判定大失败：你在前往${location.name}时迷失路线。`);
         openEvent("行进大失败", `你没有抵达${location.name}。\n路线判断失误，本次移动未完成。${xp ? `\n获得经验 ${xp}。` : ""}`, check.tone, check);
@@ -5000,6 +5424,7 @@
       patrolMovement.notices.push(...patrolFollowUp.notices);
       patrolMovement.engaged ||= patrolFollowUp.engaged;
       spawnLocation(location);
+      playSound(raid.enemy ? "failure" : "move", raid.enemy ? 0.34 : 0.26);
       if (!Array.isArray(raid.visitedLocations)) raid.visitedLocations = [raid.currentLocation];
       if (!raid.visitedLocations.includes(id)) raid.visitedLocations.push(id);
       const xp = grantCheckXp(check, { criticalFailure: 3, failure: 8, success: 14, criticalSuccess: 22 }, "完成区域移动");
@@ -5037,9 +5462,11 @@
       if (!raid || raid.defeated || raid.enemy || raid.locationSearched) return;
       const location = data.locations.find((item) => item.id === raid.currentLocation) || data.locations[0];
       if (location.isExtraction) {
+        playSound("failure");
         openEvent("撤离场景", "这里是独立撤离点，不刷新物资，也不提供搜索。请根据地图上的撤离规则进行操作。", "info");
         return;
       }
+      playSound("search", 0.24);
       const target = clamp(78 - location.riskLevel * 6 + (raid.teammate.id === "hackclaw" ? 10 : 0) + (raid.searchBonus || 0), 58, 94);
       const check = rollCheck(target);
       raid.rollHistory.unshift({ type: "search", location: location.name, ...check });
@@ -5049,6 +5476,7 @@
       const hiddenEnemy = revealHiddenEnemy(location.id, check);
 
       if (check.result === "criticalFailure") {
+        playSound("failure", 0.38);
         const enemy = hiddenEnemy || encounterFor(location);
         if (enemy) raid.enemy = enemy;
         raid.locationLoot = [];
@@ -5067,6 +5495,7 @@
         const fallbackLoot = pick(fallbackCandidates.length ? fallbackCandidates : data.lootPool);
         raid.locationLoot = raid.inventory.length < raid.inventoryLimit ? [{ ...fallbackLoot }] : [];
         if (raid.locationLoot.length) {
+          playSound(hiddenEnemy ? "failure" : "success", hiddenEnemy ? 0.34 : 0.26);
           raid.inventory.push(raid.locationLoot[0]);
           raid.lootValue += raid.locationLoot[0].value;
           const foundItem = raid.locationLoot[0];
@@ -5084,6 +5513,7 @@
             `<p>${rollText(check)}</p>${lootResultsMarkup([foundItem])}<p>没有找到高价值目标，但带出了一件基础物资。获得经验 <strong>${xp}</strong>。</p>${hiddenEnemy ? `<p><strong>${hiddenEnemy.name}从场景中现身，先处理敌人才能继续行动。</strong></p>` : ""}`
           );
         } else {
+          playSound(hiddenEnemy ? "failure" : "failure", 0.3);
           addLog(`你搜索了${location.name}，发现物资但背包已满。`);
           if (hiddenEnemy) {
             raid.enemy = hiddenEnemy;
@@ -5117,9 +5547,11 @@
         ? `你搜索了当前区域，获得：${found.map((item) => `${lootNameMarkup(item)}（${money(item.value)}）`).join("、")}。`
         : "背包已满，物资暂时无法带走。");
       if (hiddenEnemy) {
+        playSound("failure", 0.34);
         raid.enemy = hiddenEnemy;
         addLog(`${hiddenEnemy.name}从${location.name}的掩体中现身，战斗被迫开始。`);
       }
+      if (found.length && !hiddenEnemy) playSound("success", 0.28);
       openEvent(
         hiddenEnemy ? `搜索触发遭遇 · ${hiddenEnemy.name}` : check.result === "criticalSuccess" ? "搜索大成功" : found.length ? "搜索完成" : "背包已满",
         found.length
@@ -5159,12 +5591,15 @@
       const raid = state.raid;
       if (!raid || raid.defeated || raid.enemy) return;
       if (raid.teammate.id === "hackclaw") {
+        playSound("success", 0.26);
         addLog("侦察手标记了安全路线。");
         openEvent("扫描完成", "骇爪发现了一条更安全的移动路线。", "success");
       } else if (chance(65)) {
+        playSound("success", 0.26);
         addLog("你发现了一条绕开巡逻的路线。");
         openEvent("扫描完成", "你发现了一条绕开巡逻的路线。", "success");
       } else {
+        playSound("failure", 0.22);
         addLog("扫描没有发现有用信息，但没有推进风险。");
         openEvent("扫描结果", "没有发现有用信息。\n你仍然可以继续搜索、移动或处理当前区域。", "warning");
       }
@@ -5225,24 +5660,28 @@
       if (!consumeStashItem(id)) return;
 
       if (id === "combat-stim") {
+        playSound("success", 0.28);
         raid.attackBonus = (raid.attackBonus || 0) + 8;
         addLog("你注射战斗兴奋剂，本局攻击判定线与伤害提高。");
         openEvent("战斗兴奋剂生效", "本局攻击力临时提高 8 点，适合处理高护甲目标。", "success");
         return;
       }
       if (id === "piercing-magazine") {
+        playSound("success", 0.28);
         raid.attackBonus = (raid.attackBonus || 0) + 5;
         addLog("你装入穿甲弹匣，本局火力校准完成。");
         openEvent("穿甲弹匣装填", "本局攻击力临时提高 5 点，下一轮交火更容易撕开护甲。", "success");
         return;
       }
       if (id === "armor-seal") {
+        playSound("success", 0.28);
         raid.damageShield = (raid.damageShield || 0) + 20;
         addLog("你部署装甲止损板，下一次交火可吸收 20 点伤害。");
         openEvent("装甲止损板部署", "下一次敌方反击造成的伤害将优先由止损板吸收，最多吸收 20 点。", "success");
         return;
       }
       if (id === "stim-shot") {
+        playSound("health", 0.3);
         const amount = Math.min(24, raid.maxHp - raid.hp);
         raid.hp += amount;
         addLog(`你使用快速恢复针，恢复 ${amount} 点生命。`);
@@ -5250,6 +5689,7 @@
         return;
       }
       if (id === "smoke-grenade") {
+        playSound("open", 0.28);
         const enemyName = raid.enemy.name;
         raid.enemy = null;
         addLog(`你投掷战术烟雾弹，成功脱离${enemyName}。`);
@@ -5257,6 +5697,7 @@
         return;
       }
       if (id === "recon-drone") {
+        playSound("success", 0.28);
         raid.safeMoveCharges = (raid.safeMoveCharges || 0) + 1;
         raid.searchBonus = (raid.searchBonus || 0) + 12;
         addLog("侦察无人机升空，下一次移动将避开遭遇，搜索判定线提高。");
@@ -5264,6 +5705,7 @@
         return;
       }
       if (id === "extraction-beacon") {
+        playSound("success", 0.28);
         raid.extractBonus = (raid.extractBonus || 0) + 10;
         addLog("撤离信标开始工作，撤离判定线提高 10 点。");
         openEvent("撤离信标启动", "本局撤离判定线提高 10 点，选择合适的撤离点完成行动。", "success");
@@ -5311,6 +5753,7 @@
     function attack() {
       const raid = state.raid;
       if (!raid || raid.defeated || !raid.enemy) return;
+      playSound("attack", 0.28);
       const enemyName = raid.enemy.name;
       const target = attackTargetFor(raid, raid.enemy);
       const check = rollCheck(target);
@@ -5327,6 +5770,7 @@
       const attackStory = attackNarrative(check, enemyName, gearPackage("attack", effectiveAttack).detail, damage);
       addLog(`${attackStory} ${rollText(check)}`);
       if (raid.enemy.currentHp <= 0) {
+        playSound("success", 0.38);
         const defeatedEnemy = raid.enemy;
         raid.kills += 1;
         if (defeatedEnemy.boss) {
@@ -5355,6 +5799,7 @@
       }
       const defense = enemyAttack(check.result);
       if (state.settlement || raid.defeated) return;
+      if (check.result === "criticalFailure") playSound("failure", 0.34);
       const health = healthStatus(raid);
       const defenseText = defense ? `\n${defense.narrative}${defense.specialText || ""}\n${rollText(defense.check)}` : "";
       const healthText = health ? `\n${health.title}：${health.message}` : "";
@@ -5390,10 +5835,13 @@
       raid.damageShield = Math.max(0, (raid.damageShield || 0) - absorbed);
       damage -= absorbed;
       raid.hp -= damage;
+      if (damage > 0) playSound("hit", 0.32);
+      if (raid.hp > 0 && raid.hp / raid.maxHp <= 0.4) playSound("health", 0.24);
       const narrative = defenseNarrative(check, enemy.name, damage);
       if (absorbed > 0) specialText += `\n装甲止损板吸收了 ${absorbed} 点伤害。`;
       addLog(`${narrative} ${rollText(check)}${specialText}`);
       if (raid.hp <= 0) {
+        playSound("failure", 0.48);
         raid.hp = 0;
         raid.defeated = true;
         const reason = "你在交战中失去行动能力，未能撤离。";
@@ -5421,6 +5869,7 @@
       if (type === "medkit") raid.medkits -= 1;
       if (type === "bandage") raid.bandages -= 1;
       raid.hp = Math.min(raid.maxHp, raid.hp + amount);
+      playSound("health", 0.32);
       addLog(`你使用${type === "medkit" ? "战地医疗包" : "止血带"}，恢复 ${amount} 点生命。`);
       openEvent(
         "医疗生效",
@@ -5446,19 +5895,23 @@
       const point = (raid?.extractions || []).find((item) => item.id === id);
       if (!raid || raid.defeated || !point) return;
       if (raid.enemy) {
+        playSound("failure");
         openEvent("无法启动撤离", "当前区域仍有敌人接触，先结束战斗再尝试撤离。", "combat");
         return;
       }
       if (point.locationId !== raid.currentLocation) {
+        playSound("failure");
         const location = data.locations.find((item) => item.id === point.locationId);
         openEvent("撤离点不在当前区域", `请先移动到${location?.name || "对应区域"}，再启动${point.name}。`, "warning");
         return;
       }
       if (point.id === "boss" && !raid.bossDefeated) {
+        playSound("failure");
         openEvent("撤离条件未满足", "这是首领专属撤离点。\n击败哈夫克大首领 · 赛义德后，撤离信号才会开放。", "warning");
         return;
       }
       if (point.id === "discard" && raid.inventory.length < 3) {
+        playSound("failure");
         openEvent("战利品不足", "应急抛载撤离点需要随机丢弃 3 件战利品。\n当前战利品不足 3 件，暂时无法启动。", "warning");
         return;
       }
@@ -5470,6 +5923,7 @@
       const xp = grantCheckXp(check, { criticalFailure: 4, failure: 10, success: 20, criticalSuccess: 35 }, "完成撤离判定");
       addLog(`你尝试从${point.name}撤离，${rollText(check)}。`);
       if (check.result === "success" || check.result === "criticalSuccess") {
+        playSound("success", 0.42);
         const discarded = point.id === "discard" ? discardRandomLoot(raid, 3) : [];
         const discardedText = discarded.length
           ? `\n随机丢弃：${discarded.map((item) => item.name).join("、")}。`
@@ -5483,6 +5937,7 @@
           check
         );
       } else {
+        playSound("failure", 0.38);
         failRaid(check.result === "criticalFailure" ? "撤离大失败，路线暴露后遭到敌人包围。" : "本次没有离开危险区域，携带物资未能带回。");
         openEvent(
           check.result === "criticalFailure" ? "撤离大失败" : "撤离结果",
@@ -5867,7 +6322,14 @@
     }
 
     function render() {
+      normalizeLiveTasks();
+      if (state.liveTasks.tasks["watch-live"]?.activeUntil) {
+        startLiveWatchTicker();
+      } else {
+        stopLiveWatchTicker();
+      }
       renderMeta();
+      renderAudioToggle();
       renderPrep();
       renderRaid();
       renderSettlement();
@@ -5876,6 +6338,17 @@
       saveGame();
     }
 
+    document.addEventListener("pointerdown", unlockAudio, { once: true, passive: true });
+    document.addEventListener("keydown", unlockAudio, { once: true });
+    document.addEventListener("click", (event) => {
+      const target = event.target instanceof Element ? event.target.closest("button") : null;
+      if (!target || target.disabled) return;
+      const actionButton = target.matches(
+        "#startRaid, #attackButton, #searchCurrentButton, #scanButton, #eventContinue, #medkitButton, #bandageButton, #giveUpButton, #backToPrep, #openLogButton, [data-travel], [data-extract], [data-use-item], [data-buy-shop], [data-upgrade], [data-select], [data-location], [data-live-task-action], [data-live-task-claim]"
+      );
+      if (!actionButton) playSound("click", 0.18);
+    });
+    $("#audioToggle")?.addEventListener("click", toggleAudio);
     loadGame();
     render();
   </script>
